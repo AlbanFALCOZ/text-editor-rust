@@ -3,67 +3,46 @@
 mod terminal;
 
 use crate::editor::terminal::{Position, Size, Terminal};
-use crossterm::event::{read, Event, Event::Key, KeyCode, KeyCode::Char, KeyModifiers};
-use crossterm::style::{Color, Colors};
+use crossterm::event::{read, Event, Event::Key, KeyCode::Char, KeyModifiers};
 use std;
 use std::io::Error;
 
+
 pub struct Editor {
     should_quit: bool,
-    pos: Position,
 }
 
 impl Editor {
     pub fn default() -> Self {
-        Editor {
-            should_quit: false,
-            pos: Position::default(),
-        }
+        Editor { should_quit: false }
     }
 
-    pub fn set_up() -> Result<(), Error> {
-        Terminal::enable_raw_mode()?;
-        Terminal::clear_screen()?;
-
-        //TODO
-        //not working
-        //Terminal::set_size(Size{length: 180, height: 38})?;
-        //Terminal::execute()?;
-
-        Terminal::set_color(Colors {
-            foreground: Option::from(Color::Green),
-            background: None,
-        })?;
-        Self::print_rows(Terminal::get_size()?.height);
-        Terminal::move_cursor_to(&Position::default())?;
-        Terminal::execute()
+    pub fn set_up(&mut self) -> Result<(), Error> {
+        Terminal::set_up()?;
+        Terminal::set_size(Terminal::get_size()?)?;
+        Self::print_rows()
     }
 
-    pub fn quit() -> Result<(), Error> {
-        Terminal::disable_raw_mode()?;
-        Terminal::clear_screen()?;
-        Terminal::reset_color()?;
-        Terminal::move_cursor_to(&Position::new(0, 0))?;
-        Terminal::execute()?;
-        Ok(())
+    pub fn quit(&mut self) -> Result<(), Error> {
+        Terminal::terminate()
     }
 
     pub fn run(&mut self) {
-        Self::set_up().unwrap();
+        self.set_up().unwrap();
         let result = self.repl();
-        Self::quit().unwrap();
+        self.quit().unwrap();
         result.unwrap();
-        println!("Goodbye ! ~~");
     }
 
     pub fn repl(&mut self) -> Result<(), Error> {
-        Self::set_up()?;
-        while !self.should_quit {
+        loop {
+            self.refresh_screen()?;
+            if self.should_quit {
+                break;
+            }
             let event = read()?;
             self.evaluate_event(&event)?;
         }
-
-        Self::quit()?;
         Ok(())
     }
 
@@ -73,36 +52,67 @@ impl Editor {
                 if event.modifiers == KeyModifiers::CONTROL && event.code == Char('q') {
                     self.should_quit = true;
                 }
-                Terminal::move_cursor_to(&self.pos)?;
-                println!("{:?}", event);
+                /*Terminal::move_cursor_to(Position::default())?;
+                let string: &str = stringify!(event);
+                Terminal::print(string)?;*/
                 Ok(())
             }
-            Event::Resize(.., height) => {
-                Self::print_rows(*height);
-                let mut size: Size = Terminal::get_size()?;
-                size.length = size.length - 30;
-                Self::print_version(Position {
-                    x: size.length,
-                    y: size.height,
-                })?;
+            Event::Resize(..) => {
+                //Terminal::clear_screen()?;
+                //Terminal::move_cursor_to(Position::default())?;
+                //Self::print_rows()?;
+                //Self::draw_welcome_message()?;
                 Ok(())
             }
             _ => Ok(()),
         }
     }
 
-    pub fn print_rows(height: u16) {
-        for _empty_line in 0..height / 3 {
-            println!();
+    pub fn refresh_screen(&self) -> Result<(), Error> {
+        Terminal::hide_cursor()?;
+        if self.should_quit {
+            Terminal::clear_screen()?;
+            println!("Goodbye ! ~~");
         }
-        for _row in height / 3..height {
-            println!("~");
-        }
+        else {
+            Self::print_rows()?;
+            Terminal::move_cursor_to(Position::default())?;
+        };
+        Terminal::show_cursor()?;
+        Terminal::execute()?;
+        Ok(())
     }
 
-    pub fn print_version(position: Position) -> Result<(), Error> {
-        Terminal::move_cursor_to(&position)?;
-        println!("Rust terminal ver 0.5");
+    pub fn print_rows() -> Result<(), Error> {
+        let Size { height, .. } = Terminal::get_size()?;
+        for current_row in 0..height {
+            Terminal::clear_line()?;
+            if current_row == height / 3 {
+                Self::draw_welcome_message()?;
+            } else {
+                Self::draw_empty_row()?;
+            }
+            if current_row + 1 < height {
+                Terminal::print("\r\n")?;
+            }
+        }
+        Ok(())
+    }
+
+    pub fn draw_empty_row() -> Result<(), Error> {
+        Terminal::print("~")?;
+        Ok(())
+    }
+
+    pub fn draw_welcome_message() -> Result<(), Error> {
+        let width = Terminal::get_size()?.width as usize;
+        let mut version = "Rust terminal version 0.5".to_string();
+        let len = version.len();
+        let padding = (width-len)/2;
+        let spaces = " ".repeat(padding);
+        version = format!("~{spaces}{version}");
+        version.truncate(width);
+        Terminal::print(version)?;
         Ok(())
     }
 }
