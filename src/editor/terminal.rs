@@ -16,6 +16,8 @@ pub struct Size {
     pub height: usize,
 }
 
+///This represents the terminal
+/// Systems where usize < u16 might not be working due to conversion u16 as usize
 pub struct Terminal {}
 
 impl Terminal {
@@ -78,6 +80,9 @@ impl Terminal {
         Ok(())
     }
 
+    ///Move cursor to the given Position
+    /// #Arguments
+    /// *`Position` - the position the cursor will be moved to. `Postition.x` and `Position.Y` will be truncated to `u16::Max` if bigger
     pub fn move_cursor_to(position: Position) -> Result<(), Error> {
         #[allow(clippy::cast_possible_truncation, clippy::as_conversions)]
         Self::execute_command(crossterm::cursor::MoveTo(
