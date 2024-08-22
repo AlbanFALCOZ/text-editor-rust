@@ -4,7 +4,6 @@ use crate::editor::terminal::{Position, Size, Terminal};
 use crossterm::event::{read, Event, Event::Key, KeyCode::Char, KeyModifiers};
 use std::io::Error;
 
-
 pub struct Editor {
     should_quit: bool,
 }
@@ -57,9 +56,9 @@ impl Editor {
         Terminal::hide_cursor()?;
         if self.should_quit {
             Terminal::clear_screen()?;
+            Terminal::reset_color()?;
             Terminal::print("Goodbye ! ~~")?;
-        }
-        else {
+        } else {
             Self::print_rows()?;
             Terminal::move_cursor_to(Position::default())?;
         };
@@ -96,7 +95,7 @@ impl Editor {
         let len = version.len();
 
         #[allow(clippy::integer_division)]
-        let padding = (width.saturating_sub(len))/2;
+        let padding = (width.saturating_sub(len)) / 2;
 
         let spaces = " ".repeat(padding);
         version = format!("~{spaces}{version}");

@@ -23,11 +23,6 @@ impl Terminal {
         Self::enable_raw_mode()?;
         Self::clear_screen()?;
         Self::move_cursor_to(Position::default())?;
-        //TODO
-        //not working
-        //Self::set_size(Size{length: 180, HEIGHT: 38})?;
-        //Self::execute()?;
-
         Self::set_color(Colors {
             foreground: Option::from(Color::Green),
             background: None,
@@ -36,9 +31,7 @@ impl Terminal {
 
     pub fn terminate() -> Result<(), Error> {
         Self::disable_raw_mode()?;
-        Self::clear_screen()?;
         Self::reset_color()?;
-        Self::move_cursor_to(Position::default())?;
         Self::execute()?;
         Ok(())
     }
@@ -86,8 +79,11 @@ impl Terminal {
     }
 
     pub fn move_cursor_to(position: Position) -> Result<(), Error> {
-        #[allow(clippy::cast_possible_truncation,clippy::as_conversions)]
-        Self::execute_command(crossterm::cursor::MoveTo(position.x as u16, position.y as u16))?;
+        #[allow(clippy::cast_possible_truncation, clippy::as_conversions)]
+        Self::execute_command(crossterm::cursor::MoveTo(
+            position.x as u16,
+            position.y as u16,
+        ))?;
         Ok(())
     }
 
