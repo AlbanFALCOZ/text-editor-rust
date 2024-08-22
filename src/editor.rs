@@ -1,10 +1,7 @@
-#![warn(clippy::all, clippy::pedantic, clippy::print_stdout)]
-
 mod terminal;
 
 use crate::editor::terminal::{Position, Size, Terminal};
 use crossterm::event::{read, Event, Event::Key, KeyCode::Char, KeyModifiers};
-use std;
 use std::io::Error;
 
 
@@ -17,20 +14,10 @@ impl Editor {
         Editor { should_quit: false }
     }
 
-    pub fn set_up(&mut self) -> Result<(), Error> {
-        Terminal::set_up()?;
-        Terminal::set_size(Terminal::get_size()?)?;
-        Self::print_rows()
-    }
-
-    pub fn quit(&mut self) -> Result<(), Error> {
-        Terminal::terminate()
-    }
-
     pub fn run(&mut self) {
-        self.set_up().unwrap();
+        Terminal::set_up().unwrap();
         let result = self.repl();
-        self.quit().unwrap();
+        Terminal::terminate().unwrap();
         result.unwrap();
     }
 
@@ -41,12 +28,12 @@ impl Editor {
                 break;
             }
             let event = read()?;
-            self.evaluate_event(&event)?;
+            self.evaluate_event(&event);
         }
         Ok(())
     }
 
-    pub fn evaluate_event(&mut self, event: &Event) -> Result<(), Error> {
+    pub fn evaluate_event(&mut self, event: &Event) {
         match event {
             Key(event) => {
                 if event.modifiers == KeyModifiers::CONTROL && event.code == Char('q') {
@@ -55,16 +42,14 @@ impl Editor {
                 /*Terminal::move_cursor_to(Position::default())?;
                 let string: &str = stringify!(event);
                 Terminal::print(string)?;*/
-                Ok(())
             }
             Event::Resize(..) => {
                 //Terminal::clear_screen()?;
                 //Terminal::move_cursor_to(Position::default())?;
                 //Self::print_rows()?;
                 //Self::draw_welcome_message()?;
-                Ok(())
             }
-            _ => Ok(()),
+            _ => (),
         }
     }
 
@@ -72,7 +57,7 @@ impl Editor {
         Terminal::hide_cursor()?;
         if self.should_quit {
             Terminal::clear_screen()?;
-            println!("Goodbye ! ~~");
+            Terminal::print("Goodbye ! ~~")?;
         }
         else {
             Self::print_rows()?;
@@ -87,12 +72,13 @@ impl Editor {
         let Size { height, .. } = Terminal::get_size()?;
         for current_row in 0..height {
             Terminal::clear_line()?;
+            #[allow(clippy::integer_division)]
             if current_row == height / 3 {
                 Self::draw_welcome_message()?;
             } else {
                 Self::draw_empty_row()?;
             }
-            if current_row + 1 < height {
+            if current_row.saturating_add(1) < height {
                 Terminal::print("\r\n")?;
             }
         }
@@ -105,10 +91,13 @@ impl Editor {
     }
 
     pub fn draw_welcome_message() -> Result<(), Error> {
-        let width = Terminal::get_size()?.width as usize;
+        let width = Terminal::get_size()?.width;
         let mut version = "Rust terminal version 0.5".to_string();
         let len = version.len();
-        let padding = (width-len)/2;
+
+        #[allow(clippy::integer_division)]
+        let padding = (width.saturating_sub(len))/2;
+
         let spaces = " ".repeat(padding);
         version = format!("~{spaces}{version}");
         version.truncate(width);

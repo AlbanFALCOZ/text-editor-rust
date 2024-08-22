@@ -1,22 +1,19 @@
-#![warn(clippy::all, clippy::pedantic, clippy::print_stdout)]
-
-use crossterm;
 use crossterm::style::{Color, Colors};
 use crossterm::terminal::ClearType;
 use crossterm::{queue, Command};
-use std::fmt::{Display};
+use std::fmt::Display;
 use std::io::{stdout, Error, Write};
 
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Position {
-    pub x: u16,
-    pub y: u16,
+    pub x: usize,
+    pub y: usize,
 }
 
 #[derive(Copy, Clone, Default)]
 pub struct Size {
-    pub width: u16,
-    pub height: u16,
+    pub width: usize,
+    pub height: usize,
 }
 
 pub struct Terminal {}
@@ -56,14 +53,21 @@ impl Terminal {
         Ok(())
     }
 
-    pub fn set_size(size: Size) -> Result<(), Error> {
+    /* pub fn set_size(size: Size) -> Result<(), Error> {
         Self::execute_command(crossterm::terminal::SetSize(size.width, size.height))?;
         Ok(())
-    }
+    }*/
 
+    ///Return the current size of terminal
+    /// Edge cases for system where usize < u16 :
+    /// Any coordinate 'x' will be truncated to usize if 'usize' < 'x' < 'u16'
     pub fn get_size() -> Result<Size, Error> {
-        let (width, height) = crossterm::terminal::size()?;
-        Ok(Size {width, height})
+        let (width_u16, height_16) = crossterm::terminal::size()?;
+        #[allow(clippy::as_conversions)]
+        let width = width_u16 as usize;
+        #[allow(clippy::as_conversions)]
+        let height = height_16 as usize;
+        Ok(Size { width, height })
     }
 
     pub fn clear_screen() -> Result<(), Error> {
@@ -82,7 +86,8 @@ impl Terminal {
     }
 
     pub fn move_cursor_to(position: Position) -> Result<(), Error> {
-        Self::execute_command(crossterm::cursor::MoveTo(position.x, position.y))?;
+        #[allow(clippy::cast_possible_truncation,clippy::as_conversions)]
+        Self::execute_command(crossterm::cursor::MoveTo(position.x as u16, position.y as u16))?;
         Ok(())
     }
 
