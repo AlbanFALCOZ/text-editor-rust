@@ -1,7 +1,6 @@
 use crossterm::style::{Color, Colors};
 use crossterm::terminal::ClearType;
 use crossterm::{queue, Command};
-use std::fmt::Display;
 use std::io::{stdout, Error, Write};
 use crate::editor::Location;
 
@@ -77,7 +76,7 @@ impl Terminal {
         Ok(())
     }
 
-    pub fn print<T: Display>(string: T) -> Result<(), Error> {
+    pub fn print(string: &str) -> Result<(), Error> {
         Self::execute_command(crossterm::style::Print(string))?;
         Ok(())
     }

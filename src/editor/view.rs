@@ -1,7 +1,13 @@
 use std::io::Error;
 use crate::editor::terminal::{Size, Terminal};
+use crate::editor::view::buffer::Buffer;
 
-pub struct View;
+mod buffer;
+
+#[derive(Default)]
+pub struct View {
+    buffer: Buffer
+}
 
 
 impl View {
@@ -10,12 +16,16 @@ impl View {
     /// It prints tilde '~' at the beginning of each line.
     /// Print the terminal version at 1/3 of the screen.
     /// The clippy warning is disabled because it doesn't matter if the version is exactly at 1/3 of our screen.
-    pub fn render() -> Result<(), Error> {
+    pub fn render(&self) -> Result<(), Error> {
         let Size { height, .. } = Terminal::get_size()?;
         Terminal::clear_line()?;
-        Terminal::print("Hello, World!\r\n")?;
-        for current_row in 1..height {
+        for current_row in 0..height {
             Terminal::clear_line()?;
+            if let Some(line) = self.buffer.lines.get(current_row){
+                Terminal::print(line)?;
+                Terminal::print("\r\n")?;
+                continue;
+            }
             #[allow(clippy::integer_division)]
             if current_row == height / 3 {
                 Self::draw_welcome_message()?;

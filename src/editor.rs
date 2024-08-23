@@ -3,7 +3,7 @@ mod view;
 
 use crate::editor::terminal::{Position, Size, Terminal};
 use crossterm::event::{
-    read, Event, Event::Key, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
+    Event, Event::Key, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, read,
 };
 use std::io::Error;
 use crate::editor::view::View;
@@ -21,6 +21,7 @@ pub struct Location {
 pub struct Editor {
     should_quit: bool,
     cursor_location: Location,
+    view: View,
 }
 
 impl Editor {
@@ -115,7 +116,7 @@ impl Editor {
             Terminal::print("Goodbye ! ~~")?;
         } else {
             Terminal::move_cursor_to(Position::default())?;
-            View::render()?;
+            self.view.render()?;
             Terminal::move_cursor_to(Position::from(&self.cursor_location))?;
         };
         Terminal::show_cursor()?;
