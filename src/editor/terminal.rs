@@ -3,6 +3,7 @@ use crossterm::terminal::ClearType;
 use crossterm::{queue, Command};
 use std::fmt::Display;
 use std::io::{stdout, Error, Write};
+use crate::editor::Location;
 
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Position {
@@ -25,6 +26,7 @@ impl Terminal {
         Self::enable_raw_mode()?;
         Self::clear_screen()?;
         Self::move_cursor_to(Position::default())?;
+
         Self::set_color(Colors {
             foreground: Option::from(Color::Green),
             background: None,
@@ -112,6 +114,20 @@ impl Terminal {
         Ok(())
     }
 
+    /*pub fn get_cursor_position() -> std::io::Result<(u16, u16)> {
+        crossterm::cursor::position()
+    }
+
+    pub fn save_cursor_position() -> Result<(), Error> {
+        Self::execute_command(crossterm::cursor::SavePosition)?;
+        Ok(())
+    }
+
+    pub fn restore_cursor_position() -> Result<(), Error> {
+        Self::execute_command(crossterm::cursor::RestorePosition)?;
+        Ok(())
+    }*/
+
     fn execute_command<T: Command>(command: T) -> Result<(), Error> {
         queue!(stdout(), command)?;
         Ok(())
@@ -120,5 +136,16 @@ impl Terminal {
     pub fn execute() -> Result<(), Error> {
         stdout().flush()?;
         Ok(())
+    }
+}
+
+
+
+impl From<&Position> for Location {
+    fn from(position: &Position) -> Location {
+        Location {
+            x: position.x,
+            y: position.y,
+        }
     }
 }
