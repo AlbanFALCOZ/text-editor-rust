@@ -1,13 +1,22 @@
+use std::io::Error;
 
-
+#[derive(Default)]
 pub struct Buffer {
     pub lines: Vec<String>
 }
 
+impl Buffer {
 
+    pub fn is_empty(&self) -> bool {
+        self.lines.is_empty()
+    }
 
-impl Default for Buffer {
-    fn default() -> Self {
-        Self {lines: vec![String::from("Hello, world!")]}
+    pub fn load(file_name: &str) -> Result<Self, Error> {
+        let file_content = std::fs::read_to_string(file_name)?;
+        let mut lines: Vec<String> = Vec::new();
+        for line in file_content.lines() {
+            lines.push(line.to_string());
+        };
+        Ok(Self {lines})
     }
 }

@@ -27,9 +27,17 @@ pub struct Editor {
 impl Editor {
     pub fn run(&mut self) {
         Terminal::set_up().unwrap();
+        self.handle_args();
         let result = self.repl();
         Terminal::terminate().unwrap();
         result.unwrap();
+    }
+    
+    fn handle_args(&mut self) {
+        let args : Vec<String> = std::env::args().collect();
+        if let Some(first_arg) = args.get(1) {
+            self.view.load(first_arg);
+        }
     }
 
     fn repl(&mut self) -> Result<(), Error> {

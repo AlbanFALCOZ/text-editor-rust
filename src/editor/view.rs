@@ -27,7 +27,7 @@ impl View {
                 continue;
             }
             #[allow(clippy::integer_division)]
-            if current_row == height / 3 {
+            if current_row == height / 3 && self.buffer.is_empty(){
                 Self::draw_welcome_message()?;
             } else {
                 Self::draw_empty_row()?;
@@ -57,5 +57,11 @@ impl View {
         version.truncate(width);
         Terminal::print(&version)?;
         Ok(())
+    }
+
+    pub fn load(&mut self, file_name: &str) {
+        if let Ok(buffer) = Buffer::load(file_name) {
+            self.buffer = buffer;
+        }
     }
 }
