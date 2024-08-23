@@ -1,10 +1,12 @@
 mod terminal;
+mod view;
 
 use crate::editor::terminal::{Position, Size, Terminal};
 use crossterm::event::{
     read, Event, Event::Key, KeyCode, KeyEvent, KeyEventKind, KeyModifiers,
 };
 use std::io::Error;
+use crate::editor::view::View;
 
 #[derive(Default)]
 pub struct Location {
@@ -113,52 +115,11 @@ impl Editor {
             Terminal::print("Goodbye ! ~~")?;
         } else {
             Terminal::move_cursor_to(Position::default())?;
-            Self::print_rows()?;
+            View::render()?;
             Terminal::move_cursor_to(Position::from(&self.cursor_location))?;
         };
         Terminal::show_cursor()?;
         Terminal::execute()?;
-        Ok(())
-    }
-
-    /// Print the lines.
-    /// It prints tilde '~' at the beginning of each line.
-    /// Print the terminal version at 1/3 of the screen.
-    /// The clippy warning is disabled because it doesn't matter if the version is exactly at 1/3 of our screen.
-    fn print_rows() -> Result<(), Error> {
-        let Size { height, .. } = Terminal::get_size()?;
-        for current_row in 0..height {
-            Terminal::clear_line()?;
-            #[allow(clippy::integer_division)]
-            if current_row == height / 3 {
-                Self::draw_welcome_message()?;
-            } else {
-                Self::draw_empty_row()?;
-            }
-            if current_row.saturating_add(1) < height {
-                Terminal::print("\r\n")?;
-            }
-        }
-        Ok(())
-    }
-
-    fn draw_empty_row() -> Result<(), Error> {
-        Terminal::print("~")?;
-        Ok(())
-    }
-
-    /// Print the welcome message.
-    /// The clippy warning is disabled because it doesn't matter if the version is not exactly centred.
-    fn draw_welcome_message() -> Result<(), Error> {
-        let width = Terminal::get_size()?.width;
-        let mut version = "Rust terminal version 0.5".to_string();
-        let len = version.len();
-        #[allow(clippy::integer_division)]
-        let padding = (width.saturating_sub(len)) / 2;
-        let spaces = " ".repeat(padding);
-        version = format!("~{spaces}{version}");
-        version.truncate(width);
-        Terminal::print(version)?;
         Ok(())
     }
 }
