@@ -1,4 +1,4 @@
-use crossterm::style::{Color, Colors};
+use crossterm::style::{Colors};
 use crossterm::terminal::ClearType;
 use crossterm::{queue, Command};
 use std::io::{stdout, Error, Write};
@@ -24,12 +24,12 @@ impl Terminal {
     pub fn set_up() -> Result<(), Error> {
         Self::enable_raw_mode()?;
         Self::clear_screen()?;
-        Self::move_cursor_to(Position::default())?;
+        Self::move_cursor_to(Position::default())
 
-        Self::set_color(Colors {
+        /*Self::set_color(Colors {
             foreground: Option::from(Color::Green),
             background: None,
-        })
+        })*/
     }
 
     pub fn terminate() -> Result<(), Error> {
@@ -137,7 +137,6 @@ impl Terminal {
         Ok(())
     }
 }
-
 
 
 impl From<&Position> for Location {

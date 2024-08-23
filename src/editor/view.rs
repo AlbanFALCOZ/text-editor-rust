@@ -1,6 +1,7 @@
 use crate::editor::terminal::{Size, Terminal};
 use crate::editor::view::buffer::Buffer;
 use std::io::Error;
+use crossterm::style::{Color, Colors};
 
 mod buffer;
 
@@ -16,46 +17,53 @@ impl View {
     /// The clippy warning is disabled because it doesn't matter if the version is exactly at 1/3 of our screen.
     pub fn render(&self) -> Result<(), Error> {
         if self.buffer.is_empty() {
-            self.render_welcome_message()?;
-        }
-        else {
+            Self::render_welcome_message()?;
+        } else {
             self.render_buffer()?;
         }
         Ok(())
     }
-    
+
     fn render_buffer(&self) -> Result<(), Error> {
         let Size { height, .. } = Terminal::get_size()?;
         for current_row in 0..height {
             Terminal::clear_line()?;
             if let Some(line) = self.buffer.lines.get(current_row) {
                 Terminal::print(line)?;
-            }
-            else {
+            } else {
+                Terminal::set_color(Colors {
+                    foreground: Option::from(Color::Green),
+                    background: None,
+                })?;
                 Self::draw_empty_row()?;
             }
             if current_row.saturating_add(1) < height {
                 Terminal::print("\r\n")?;
             }
         }
+        Terminal::reset_color()?;
         Ok(())
     }
 
-    fn render_welcome_message(&self) -> Result<(), Error> {
+    fn render_welcome_message() -> Result<(), Error> {
         let Size { height, .. } = Terminal::get_size()?;
         for current_row in 0..height {
             Terminal::clear_line()?;
             #[allow(clippy::integer_division)]
-            if current_row == height/3 {
+            if current_row == height / 3 {
                 Self::draw_welcome_message()?;
-            }
-            else {
+            } else {
+                Terminal::set_color(Colors {
+                    foreground: Option::from(Color::Green),
+                    background: None,
+                })?;
                 Self::draw_empty_row()?;
             }
             if current_row.saturating_add(1) < height {
                 Terminal::print("\r\n")?;
             }
         };
+        Terminal::reset_color()?;
         Ok(())
     }
 
