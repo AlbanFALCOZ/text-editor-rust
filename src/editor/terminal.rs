@@ -1,13 +1,13 @@
-use crossterm::style::{Colors};
+use crate::editor::Location;
+use crossterm::style::{Color, Colors};
 use crossterm::terminal::ClearType;
 use crossterm::{queue, Command};
 use std::io::{stdout, Error, Write};
-use crate::editor::Location;
 
 #[derive(Copy, Clone, Default, Debug)]
 pub struct Position {
-    pub x: usize,
-    pub y: usize,
+    pub col: usize,
+    pub row: usize,
 }
 
 #[derive(Copy, Clone, Default)]
@@ -25,11 +25,6 @@ impl Terminal {
         Self::enable_raw_mode()?;
         Self::clear_screen()?;
         Self::move_cursor_to(Position::default())
-
-        /*Self::set_color(Colors {
-            foreground: Option::from(Color::Green),
-            background: None,
-        })*/
     }
 
     pub fn terminate() -> Result<(), Error> {
@@ -81,14 +76,22 @@ impl Terminal {
         Ok(())
     }
 
+    pub fn set_color_to_green() -> Result<(), Error> {
+        Self::set_color(Colors {
+            foreground: Option::from(Color::Green),
+            background: None,
+        })?;
+        Ok(())
+    }
+
     /// Move cursor to the given Position.
     /// # Arguments
     /// * `Position` - the position the cursor will be moved to. `Position.x` and `Position.Y` will be truncated to `u16::Max` if bigger
     pub fn move_cursor_to(position: Position) -> Result<(), Error> {
         #[allow(clippy::cast_possible_truncation, clippy::as_conversions)]
         Self::execute_command(crossterm::cursor::MoveTo(
-            position.x as u16,
-            position.y as u16,
+            position.col as u16,
+            position.row as u16,
         ))?;
         Ok(())
     }
@@ -138,12 +141,11 @@ impl Terminal {
     }
 }
 
-
 impl From<&Position> for Location {
     fn from(position: &Position) -> Location {
         Location {
-            x: position.x,
-            y: position.y,
+            x: position.col,
+            y: position.row,
         }
     }
 }

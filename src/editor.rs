@@ -2,11 +2,9 @@ mod terminal;
 mod view;
 
 use crate::editor::terminal::{Position, Size, Terminal};
-use crossterm::event::{
-    Event, Event::Key, KeyCode, KeyEvent, KeyEventKind, KeyModifiers, read,
-};
-use std::io::Error;
 use crate::editor::view::View;
+use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
+use std::io::Error;
 
 #[derive(Default)]
 pub struct Location {
@@ -32,9 +30,9 @@ impl Editor {
         Terminal::terminate().unwrap();
         result.unwrap();
     }
-    
+
     fn handle_args(&mut self) {
-        let args : Vec<String> = std::env::args().collect();
+        let args: Vec<String> = std::env::args().collect();
         if let Some(first_arg) = args.get(1) {
             self.view.load(first_arg);
         }
@@ -47,35 +45,50 @@ impl Editor {
                 break;
             }
             let event = read()?;
-            self.evaluate_event(&event)?;
+            self.evaluate_event(event)?;
         }
         Ok(())
     }
 
-    fn evaluate_event(&mut self, event: &Event) -> Result<(), Error> {
-        if let Key(KeyEvent {
-            code,
-            modifiers,
-            kind: KeyEventKind::Press,
-            ..
-        }) = *event
-        {
-            match code {
-                KeyCode::Char('q' | 'Q') if modifiers == KeyModifiers::CONTROL => {
+    #[allow(clippy::needless_pass_by_value)]
+    fn evaluate_event(&mut self, event: Event) -> Result<(), Error> {
+        match event {
+            Key(KeyEvent {
+                code,
+                modifiers,
+                kind: KeyEventKind::Press,
+                ..
+            }) => match (code, modifiers) {
+                (KeyCode::Char('q' | 'Q'), KeyModifiers::CONTROL) => {
                     self.should_quit = true;
                 }
-                KeyCode::Up |
-                KeyCode::Down |
-                KeyCode::Right |
-                KeyCode::Left |
-                KeyCode::End |
-                KeyCode::Home |
-                KeyCode::PageUp|
-                KeyCode::PageDown => {
+                (
+                    KeyCode::Up
+                    | KeyCode::Down
+                    | KeyCode::Right
+                    | KeyCode::Left
+                    | KeyCode::End
+                    | KeyCode::Home
+                    | KeyCode::PageUp
+                    | KeyCode::PageDown,
+                    _,
+                ) => {
                     self.move_caret(code)?;
                 }
-                _ => (),
+                _ => {}
+            },
+            Event::Resize(width_u16, height_u16) => {
+                //Systems where usize < u16 will cause problems
+                #[allow(clippy::as_conversions)]
+                let width = width_u16 as usize;
+                //Systems where usize < u16 will cause problems
+                #[allow(clippy::as_conversions)]
+                let height = height_u16 as usize;
+                self.view.resize(Size {
+                    width,height
+                });
             }
+            _ => {}
         }
         Ok(())
     }
@@ -110,20 +123,18 @@ impl Editor {
             }
             _ => (),
         };
-        self.cursor_location = Location{x,y};
+        self.cursor_location = Location { x, y };
         Ok(())
-
     }
 
-    fn refresh_screen(&self) -> Result<(), Error> {
+    fn refresh_screen(&mut self) -> Result<(), Error> {
         Terminal::hide_cursor()?;
+        Terminal::move_cursor_to(Position::default())?;
         if self.should_quit {
             Terminal::clear_screen()?;
-            Terminal::move_cursor_to(Position::default())?;
             Terminal::reset_color()?;
             Terminal::print("Goodbye ! ~~")?;
         } else {
-            Terminal::move_cursor_to(Position::default())?;
             self.view.render()?;
             Terminal::move_cursor_to(Position::from(&self.cursor_location))?;
         };
@@ -136,8 +147,8 @@ impl Editor {
 impl From<&Location> for Position {
     fn from(location: &Location) -> Position {
         Position {
-            x: location.x,
-            y: location.y,
+            col: location.x,
+            row: location.y,
         }
     }
 }
