@@ -5,6 +5,7 @@ use crate::editor::terminal::{Position, Size, Terminal};
 use crate::editor::view::View;
 use crossterm::event::{read, Event, Event::Key, KeyCode, KeyEvent, KeyEventKind, KeyModifiers};
 use std::io::Error;
+use std::panic::{set_hook, take_hook};
 
 #[derive(Default)]
 pub struct Location {
@@ -15,7 +16,6 @@ pub struct Location {
 /// This represents our Editor
 /// It manages all the events and printing that happen in the terminal
 /// It relies on our Terminal and the functions of the crossterm crate to work
-#[derive(Default)]
 pub struct Editor {
     should_quit: bool,
     cursor_location: Location,
@@ -23,35 +23,48 @@ pub struct Editor {
 }
 
 impl Editor {
-    pub fn run(&mut self) {
-        Terminal::set_up().unwrap();
-        self.handle_args();
-        let result = self.repl();
-        Terminal::terminate().unwrap();
-        result.unwrap();
-    }
-
-    fn handle_args(&mut self) {
+    pub fn new() -> Result<Self, Error> {
+        let current_hook = take_hook();
+        set_hook(Box::new(move |panic_info| {
+            let _ = Terminal::terminate();
+            current_hook(panic_info);
+        }));
+        Terminal::set_up()?;
+        let mut view = View::default();
         let args: Vec<String> = std::env::args().collect();
         if let Some(first_arg) = args.get(1) {
-            self.view.load(first_arg);
+            view.load(first_arg);
         }
+        Ok(Self {
+            should_quit: false,
+            cursor_location: Location::default(),
+            view,
+        })
     }
 
-    fn repl(&mut self) -> Result<(), Error> {
+    pub fn run(&mut self) {
         loop {
-            self.refresh_screen()?;
+            self.refresh_screen();
             if self.should_quit {
                 break;
             }
-            let event = read()?;
-            self.evaluate_event(event)?;
+            match read() {
+                Ok(event) => {
+                    self.evaluate_event(event);
+                }
+                Err(err) => {
+                    #[cfg(debug_assertions)]
+                    {
+                        panic!("Could not read the event {:?}",err)                        
+                    }
+
+                }
+            }
         }
-        Ok(())
     }
 
     #[allow(clippy::needless_pass_by_value)]
-    fn evaluate_event(&mut self, event: Event) -> Result<(), Error> {
+    fn evaluate_event(&mut self, event: Event) {
         match event {
             Key(KeyEvent {
                 code,
@@ -73,7 +86,7 @@ impl Editor {
                     | KeyCode::PageDown,
                     _,
                 ) => {
-                    self.move_caret(code)?;
+                    self.move_caret(code);
                 }
                 _ => {}
             },
@@ -84,18 +97,15 @@ impl Editor {
                 //Systems where usize < u16 will cause problems
                 #[allow(clippy::as_conversions)]
                 let height = height_u16 as usize;
-                self.view.resize(Size {
-                    width,height
-                });
+                self.view.resize(Size { width, height });
             }
             _ => {}
         }
-        Ok(())
     }
 
-    fn move_caret(&mut self, key_code: KeyCode) -> Result<(), Error> {
+    fn move_caret(&mut self, key_code: KeyCode) {
         let Location { mut x, mut y } = self.cursor_location;
-        let Size { width, height } = Terminal::get_size()?;
+        let Size { width, height } = Terminal::get_size().unwrap_or_default();
         match key_code {
             KeyCode::Up => {
                 y = y.saturating_sub(1);
@@ -124,25 +134,27 @@ impl Editor {
             _ => (),
         };
         self.cursor_location = Location { x, y };
-        Ok(())
     }
 
-    fn refresh_screen(&mut self) -> Result<(), Error> {
-        Terminal::hide_cursor()?;
-        Terminal::move_cursor_to(Position::default())?;
-        if self.should_quit {
-            Terminal::clear_screen()?;
-            Terminal::reset_color()?;
-            Terminal::print("Goodbye ! ~~")?;
-        } else {
-            self.view.render()?;
-            Terminal::move_cursor_to(Position::from(&self.cursor_location))?;
-        };
-        Terminal::show_cursor()?;
-        Terminal::execute()?;
-        Ok(())
+    fn refresh_screen(&mut self) {
+        let _ = Terminal::hide_cursor();
+        self.view.render();
+        let _ = Terminal::move_cursor_to(Position::from(&self.cursor_location));
+        let _ = Terminal::show_cursor();
+        let _ = Terminal::execute();
     }
 }
+
+
+impl Drop for Editor {
+    fn drop(&mut self) {
+        let _ = Terminal::terminate();
+        if self.should_quit {
+            let _ = Terminal::print("Goodbye ! ~~");
+        } 
+    }
+}
+
 
 impl From<&Location> for Position {
     fn from(location: &Location) -> Position {

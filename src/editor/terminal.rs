@@ -22,15 +22,18 @@ pub struct Terminal {}
 
 impl Terminal {
     pub fn set_up() -> Result<(), Error> {
+        Self::enter_alternate_screen()?;
         Self::enable_raw_mode()?;
         Self::clear_screen()?;
         Self::move_cursor_to(Position::default())
     }
 
     pub fn terminate() -> Result<(), Error> {
-        Self::disable_raw_mode()?;
+        Self::show_cursor()?;
         Self::reset_color()?;
+        Self::leave_alternate_screen()?;
         Self::execute()?;
+        Self::disable_raw_mode()?;
         Ok(())
     }
 
@@ -44,10 +47,15 @@ impl Terminal {
         Ok(())
     }
 
-    /* pub fn set_size(size: Size) -> Result<(), Error> {
-        Self::execute_command(crossterm::terminal::SetSize(size.width, size.height))?;
+    pub fn enter_alternate_screen() -> Result<(), Error> {
+        Self::queue_command(crossterm::terminal::EnterAlternateScreen)?;
         Ok(())
-    }*/
+    }
+
+    pub fn leave_alternate_screen() -> Result<(), Error> {
+        Self::queue_command(crossterm::terminal::LeaveAlternateScreen)?;
+        Ok(())
+    }
 
     /// Return the current size of terminal.
     /// Edge cases for system where usize < u16 :
@@ -62,17 +70,27 @@ impl Terminal {
     }
 
     pub fn clear_screen() -> Result<(), Error> {
-        Self::execute_command(crossterm::terminal::Clear(ClearType::All))?;
+        Self::queue_command(crossterm::terminal::Clear(ClearType::All))?;
         Ok(())
     }
 
     pub fn clear_line() -> Result<(), Error> {
-        Self::execute_command(crossterm::terminal::Clear(ClearType::CurrentLine))?;
+        Self::queue_command(crossterm::terminal::Clear(ClearType::CurrentLine))?;
         Ok(())
     }
 
     pub fn print(string: &str) -> Result<(), Error> {
-        Self::execute_command(crossterm::style::Print(string))?;
+        Self::queue_command(crossterm::style::Print(string))?;
+        Ok(())
+    }
+
+    pub fn print_row(at_row: usize, line: &str) -> Result<(), Error> {
+        Self::move_cursor_to(Position {
+            row: at_row,
+            col: 0,
+        })?;
+        Self::clear_line()?;
+        Self::print(line)?;
         Ok(())
     }
 
@@ -89,7 +107,7 @@ impl Terminal {
     /// * `Position` - the position the cursor will be moved to. `Position.x` and `Position.Y` will be truncated to `u16::Max` if bigger
     pub fn move_cursor_to(position: Position) -> Result<(), Error> {
         #[allow(clippy::cast_possible_truncation, clippy::as_conversions)]
-        Self::execute_command(crossterm::cursor::MoveTo(
+        Self::queue_command(crossterm::cursor::MoveTo(
             position.col as u16,
             position.row as u16,
         ))?;
@@ -97,40 +115,26 @@ impl Terminal {
     }
 
     pub fn set_color(colors: Colors) -> Result<(), Error> {
-        Self::execute_command(crossterm::style::SetColors(colors))?;
+        Self::queue_command(crossterm::style::SetColors(colors))?;
         Ok(())
     }
 
     pub fn reset_color() -> Result<(), Error> {
-        Self::execute_command(crossterm::style::ResetColor)?;
+        Self::queue_command(crossterm::style::ResetColor)?;
         Ok(())
     }
 
     pub fn hide_cursor() -> Result<(), Error> {
-        Self::execute_command(crossterm::cursor::Hide)?;
+        Self::queue_command(crossterm::cursor::Hide)?;
         Ok(())
     }
 
     pub fn show_cursor() -> Result<(), Error> {
-        Self::execute_command(crossterm::cursor::Show)?;
+        Self::queue_command(crossterm::cursor::Show)?;
         Ok(())
     }
 
-    /*pub fn get_cursor_position() -> std::io::Result<(u16, u16)> {
-        crossterm::cursor::position()
-    }
-
-    pub fn save_cursor_position() -> Result<(), Error> {
-        Self::execute_command(crossterm::cursor::SavePosition)?;
-        Ok(())
-    }
-
-    pub fn restore_cursor_position() -> Result<(), Error> {
-        Self::execute_command(crossterm::cursor::RestorePosition)?;
-        Ok(())
-    }*/
-
-    fn execute_command<T: Command>(command: T) -> Result<(), Error> {
+    fn queue_command<T: Command>(command: T) -> Result<(), Error> {
         queue!(stdout(), command)?;
         Ok(())
     }

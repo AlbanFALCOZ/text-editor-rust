@@ -1,6 +1,5 @@
-use crate::editor::terminal::{Position, Size, Terminal};
+use crate::editor::terminal::{ Size, Terminal};
 use crate::editor::view::buffer::Buffer;
-use std::io::Error;
 
 mod buffer;
 
@@ -11,13 +10,13 @@ pub struct View {
 }
 
 impl View {
-    pub fn render(&mut self) -> Result<(), Error> {
+    pub fn render(&mut self) {
         if !self.needs_redraw {
-            return Ok(());
+            return;
         }
         let Size { width, height } = self.size;
         if width == 0 || height == 0 {
-            return Ok(());
+            return;
         }
         //We allow this because it doesn't matter is the version is exactly at 1/3 of the screen
         #[allow(clippy::integer_division)]
@@ -29,24 +28,21 @@ impl View {
                 } else {
                     line
                 };
-                Self::render_line(current_row, truncated_line)?;
+                Self::render_line(current_row, truncated_line);
             } else if current_row == vertical_center && self.buffer.is_empty() {
-                Self::render_line(current_row, &Self::build_welcome_message(width))?;
+                Self::render_line(current_row, &Self::build_welcome_message(width));
             } else {
-                Terminal::set_color_to_green()?;
-                Self::render_line(current_row, "~")?;
+                let _ = Terminal::set_color_to_green();
+                Self::render_line(current_row, "~");
             }
         }
-        Terminal::reset_color()?;
+        let _ = Terminal::reset_color();
         self.needs_redraw = false;
-        Ok(())
     }
 
-    fn render_line(at: usize, line_text: &str) -> Result<(), Error> {
-        Terminal::move_cursor_to(Position { row: at, col: 0 })?;
-        Terminal::clear_line()?;
-        Terminal::print(line_text)?;
-        Ok(())
+    fn render_line(at: usize, line_text: &str) {
+        let result = Terminal::print_row(at, line_text);
+        debug_assert!(result.is_ok(), "Failed to render line");
     }
 
     fn build_welcome_message(width: usize) -> String {
