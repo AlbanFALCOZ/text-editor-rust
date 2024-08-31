@@ -1,4 +1,3 @@
-use crate::editor::Location;
 use crossterm::style::{Color, Colors};
 use crossterm::terminal::ClearType;
 use crossterm::{queue, Command};
@@ -145,11 +144,3 @@ impl Terminal {
     }
 }
 
-impl From<&Position> for Location {
-    fn from(position: &Position) -> Location {
-        Location {
-            x: position.col,
-            y: position.row,
-        }
-    }
-}
