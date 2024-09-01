@@ -1,8 +1,8 @@
-use std::cmp::min;
 use crate::editor::editorcommand::{Direction, EditorCommand};
 use crate::editor::terminal::{Position, Size, Terminal};
 use crate::editor::view::buffer::Buffer;
 use crate::editor::view::location::Location;
+use std::cmp::min;
 
 mod buffer;
 mod line;
@@ -98,11 +98,13 @@ impl View {
             }
             Direction::PageDown => {
                 if y.saturating_add(y_scroll).saturating_add(height) < number_of_lines {
-                        y = min(y.saturating_add(1),width.saturating_sub(1));
-                        y_scroll = min(y_scroll.saturating_add(height),number_of_lines.saturating_sub(height));
-                        self.needs_redraw = true;
-                }
-                else {
+                    y = min(y.saturating_add(1), width.saturating_sub(1));
+                    y_scroll = min(
+                        y_scroll.saturating_add(height),
+                        number_of_lines.saturating_sub(height),
+                    );
+                    self.needs_redraw = true;
+                } else {
                     y = height.saturating_sub(1);
                 }
             }
@@ -114,7 +116,12 @@ impl View {
                 x_scroll = 0;
             }
             Direction::End => {
-                let current_line_len = self.buffer.lines.get(y).unwrap().len();
+                let current_line_len = self
+                    .buffer
+                    .lines
+                    .get(y.saturating_add(y_scroll))
+                    .unwrap()
+                    .len();
                 if current_line_len.saturating_sub(x_scroll) < width {
                     x = current_line_len.saturating_sub(x_scroll);
                 } else {
@@ -166,11 +173,35 @@ impl View {
                     self.needs_redraw = true;
                 }
             }
-            Direction::Right => {
-                if x >= width.saturating_sub(1) {
-                    x_scroll = x_scroll.saturating_add(1);
-                    self.needs_redraw = true;
+            Direction::Right => 'right: {
+                if y.saturating_add(y_scroll) >= number_of_lines {
+                    break 'right;
+                }
+                let current_line_len = self
+                    .buffer
+                    .lines
+                    .get(y.saturating_add(y_scroll))
+                    .unwrap()
+                    .len();
+                if x.saturating_add(x_scroll) >= current_line_len {
+                    if x_scroll > 0 {
+                        self.needs_redraw = true;
+                    }
+                    x = 0;
+                    x_scroll = 0;
+                    if y.saturating_add(y_scroll) <= number_of_lines {
+                        if y.saturating_add(1) < height {
+                            y = y.saturating_add(1);
+                        } else {
+                            y_scroll = y_scroll.saturating_add(1);
+                            self.needs_redraw = true;
+                        }
+                    }
                 } else {
+                    if x >= width {
+                        x_scroll = x_scroll.saturating_add(1);
+                        self.needs_redraw = true;
+                    }
                     x = x.saturating_add(1);
                 }
             }
