@@ -1,3 +1,4 @@
+use std::cmp::min;
 use crate::editor::editorcommand::{Direction, EditorCommand};
 use crate::editor::terminal::{Position, Size, Terminal};
 use crate::editor::view::buffer::Buffer;
@@ -78,47 +79,108 @@ impl View {
 
     pub fn move_text_location(&mut self, direction: &Direction) {
         let Location { mut x, mut y } = self.location;
+        let Location {
+            x: mut x_scroll,
+            y: mut y_scroll,
+        } = self.scroll_offset;
         let Size { width, height } = self.size;
+        let number_of_lines = self.buffer.lines.len();
         match direction {
             Direction::PageUp => {
-                y = 0;
-                self.scroll_offset.y = 0;
+                if y.saturating_add(y_scroll) < height {
+                    y = 0;
+                    y_scroll = 0;
+                } else {
+                    y = y.saturating_sub(1);
+                    y_scroll = y_scroll.saturating_sub(height);
+                }
                 self.needs_redraw = true;
-            },
-            Direction::PageDown => y = height.saturating_add(1),
+            }
+            Direction::PageDown => {
+                if y.saturating_add(y_scroll).saturating_add(height) < number_of_lines {
+                        y = min(y.saturating_add(1),width.saturating_sub(1));
+                        y_scroll = min(y_scroll.saturating_add(height),number_of_lines.saturating_sub(height));
+                        self.needs_redraw = true;
+                }
+                else {
+                    y = height.saturating_sub(1);
+                }
+            }
             Direction::Home => {
+                if x_scroll > 0 {
+                    self.needs_redraw = true;
+                }
                 x = 0;
-                self.scroll_offset.x = 0;
-                self.needs_redraw = true;
-            },
-            Direction::End => x = width.saturating_add(1),
+                x_scroll = 0;
+            }
+            Direction::End => {
+                let current_line_len = self.buffer.lines.get(y).unwrap().len();
+                if current_line_len.saturating_sub(x_scroll) < width {
+                    x = current_line_len.saturating_sub(x_scroll);
+                } else {
+                    x = width.saturating_sub(1);
+                    x_scroll = current_line_len.saturating_sub(width).saturating_add(1);
+                    self.needs_redraw = true;
+                }
+            }
             Direction::Up => {
                 if y > 0 {
                     y = y.saturating_sub(1);
                 } else {
-                    self.scroll_offset.y = self.scroll_offset.y.saturating_sub(1);
+                    y_scroll = y_scroll.saturating_sub(1);
                     self.needs_redraw = true;
                 }
             }
             Direction::Left => {
-                if x > 0 {
+                //If the cursor is at the beginning of line and the screen hasn't moved
+                if x == 0 && x_scroll == 0 {
+                    //If we're at the beginning of the file, we do nothing
+                    if y.saturating_add(y_scroll) != 0 {
+                        if y > 0 {
+                            y -= 1;
+                        } else {
+                            y_scroll = y_scroll.saturating_sub(1);
+                        }
+                        let current_line_len = self
+                            .buffer
+                            .lines
+                            .get(y.saturating_add(y_scroll))
+                            .unwrap()
+                            .len();
+                        if current_line_len < width {
+                            x = current_line_len;
+                        } else {
+                            x = width.saturating_sub(1);
+                            x_scroll = current_line_len.saturating_sub(width).saturating_add(1);
+                        }
+                        self.needs_redraw = true;
+                    }
+                }
+                //If the cursor is not at the beginning of line
+                else if x > 0 {
                     x = x.saturating_sub(1);
-                } else {
-                    self.scroll_offset.x = self.scroll_offset.x.saturating_sub(1);
+                }
+                //If the cursor is at the beginning of line and the screen has moved
+                else if x_scroll > 0 {
+                    x_scroll = x_scroll.saturating_sub(1);
                     self.needs_redraw = true;
                 }
             }
             Direction::Right => {
                 if x >= width.saturating_sub(1) {
-                    self.scroll_offset.x = self.scroll_offset.x.saturating_add(1);
+                    x_scroll = x_scroll.saturating_add(1);
                     self.needs_redraw = true;
                 } else {
                     x = x.saturating_add(1);
                 }
             }
-            Direction::Down => {
+            Direction::Down => 'down: {
+                //We let the user go down one line
+                if y.saturating_add(y_scroll) >= number_of_lines {
+                    break 'down;
+                }
                 if y >= height.saturating_sub(1) {
-                    self.scroll_offset.y = self.scroll_offset.y.saturating_add(1);
+                    y_scroll = y_scroll.saturating_add(1);
                     self.needs_redraw = true;
                 } else {
                     y = y.saturating_add(1);
@@ -126,6 +188,10 @@ impl View {
             }
         }
         self.location = Location { x, y };
+        self.scroll_offset = Location {
+            x: x_scroll,
+            y: y_scroll,
+        };
         //self.scroll_location_into_view();
     }
 
