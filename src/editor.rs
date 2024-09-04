@@ -1,9 +1,8 @@
-mod editorcommand;//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+mod editorcommand;
 mod terminal;
 mod view;
-
 use crate::editor::editorcommand::EditorCommand;
-use crate::editor::terminal::{ Terminal};
+use crate::editor::terminal::Terminal;
 use crate::editor::view::View;
 use crossterm::event::{read, Event, KeyEvent, KeyEventKind};
 use std::io::Error;
@@ -66,12 +65,13 @@ impl Editor {
 
         if should_process {
             match EditorCommand::try_from(event) {
-                Ok(command) => if matches!(command, EditorCommand::Quit) {
-                    self.should_quit = true;
+                Ok(command) => {
+                    if matches!(command, EditorCommand::Quit) {
+                        self.should_quit = true;
+                    } else {
+                        self.view.handle_command(command);
+                    }
                 }
-                    else {
-                    self.view.handle_command(command);
-                },
                 Err(err) => {
                     #[cfg(debug_assertions)]
                     {

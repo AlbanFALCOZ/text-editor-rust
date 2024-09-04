@@ -163,8 +163,11 @@ impl View {
                 } else if current_cursor_pox_s.saturating_sub(upper_line_len) < width {
                     x = upper_line_len.saturating_sub(x_scroll);
                 } else {
-                    x = min(upper_line_len.saturating_sub(1), width);
-                    x_scroll = upper_line_len.saturating_sub(width).saturating_add(1);
+                    x = min(upper_line_len, width);
+                    x_scroll = upper_line_len.saturating_sub(width);
+                    if x == width {
+                        x_scroll = x_scroll.saturating_add(1);
+                    }
                     self.needs_redraw = true;
                 }
             }
@@ -228,15 +231,14 @@ impl View {
                             self.needs_redraw = true;
                         }
                     }
+                } else if x.saturating_add(1) >= width {
+                    x_scroll = x_scroll.saturating_add(1);
+                    self.needs_redraw = true;
                 } else {
-                    if x.saturating_add(1) >= width {
-                        x_scroll = x_scroll.saturating_add(1);
-                        self.needs_redraw = true;
-                    } else {
-                        x = x.saturating_add(1);
-                    }
+                    x = x.saturating_add(1);
                 }
             }
+
             Direction::Down => 'down: {
                 //We let the user go down one line
                 if y.saturating_add(y_scroll) >= number_of_lines {
@@ -247,6 +249,31 @@ impl View {
                     self.needs_redraw = true;
                 } else {
                     y = y.saturating_add(1);
+                }
+
+                let current_cursor_pox_s = x.saturating_add(x_scroll);
+                let lower_line_len = self
+                    .buffer
+                    .lines
+                    .get(y.saturating_add(y_scroll.saturating_add(0)))
+                    .unwrap()
+                    .len();
+
+                if x == 0 {
+                    x = lower_line_len;
+                } else if lower_line_len > current_cursor_pox_s {
+                    break 'down;
+                } else if x_scroll == 0 {
+                    x = lower_line_len;
+                } else if current_cursor_pox_s.saturating_sub(lower_line_len) < width {
+                    x = lower_line_len.saturating_sub(x_scroll);
+                } else {
+                    x = min(lower_line_len, width);
+                    x_scroll = lower_line_len.saturating_sub(width);
+                    if x == width {
+                        x_scroll = x_scroll.saturating_add(1);
+                    }
+                    self.needs_redraw = true;
                 }
             }
         }
