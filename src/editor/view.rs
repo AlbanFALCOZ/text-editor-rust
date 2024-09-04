@@ -77,6 +77,7 @@ impl View {
         }
     }
 
+    #[allow(clippy::too_many_lines)]
     pub fn move_text_location(&mut self, direction: &Direction) {
         let Location { mut x, mut y } = self.location;
         let Location {
@@ -87,6 +88,7 @@ impl View {
         let number_of_lines = self.buffer.lines.len();
         match direction {
             Direction::PageUp => {
+                //If the screen hasn't scrolled down
                 if y.saturating_add(y_scroll) < height {
                     y = 0;
                     y_scroll = 0;
@@ -97,6 +99,7 @@ impl View {
                 self.needs_redraw = true;
             }
             Direction::PageDown => {
+                //We don't want to go past the number of lines if we go down
                 if y.saturating_add(y_scroll).saturating_add(height) < number_of_lines {
                     y = min(y.saturating_add(1), width.saturating_sub(1));
                     y_scroll = min(
@@ -104,7 +107,9 @@ impl View {
                         number_of_lines.saturating_sub(height),
                     );
                     self.needs_redraw = true;
-                } else {
+                }
+                //If we scrolled all the way down, we put the cursor at the bottom
+                else {
                     y = height.saturating_sub(1);
                 }
             }
@@ -130,11 +135,36 @@ impl View {
                     self.needs_redraw = true;
                 }
             }
-            Direction::Up => {
+            Direction::Up => 'up: {
+                if y == 0 && y_scroll == 0 {
+                    break 'up;
+                }
                 if y > 0 {
                     y = y.saturating_sub(1);
                 } else {
                     y_scroll = y_scroll.saturating_sub(1);
+                    self.needs_redraw = true;
+                }
+
+                let current_cursor_pox_s = x.saturating_add(x_scroll);
+                let upper_line_len = self
+                    .buffer
+                    .lines
+                    .get(y.saturating_add(y_scroll))
+                    .unwrap()
+                    .len();
+
+                if x == 0 {
+                    x = upper_line_len;
+                } else if upper_line_len > current_cursor_pox_s {
+                    break 'up;
+                } else if x_scroll == 0 {
+                    x = upper_line_len;
+                } else if current_cursor_pox_s.saturating_sub(upper_line_len) < width {
+                    x = upper_line_len.saturating_sub(x_scroll);
+                } else {
+                    x = min(upper_line_len.saturating_sub(1), width);
+                    x_scroll = upper_line_len.saturating_sub(width).saturating_add(1);
                     self.needs_redraw = true;
                 }
             }
@@ -144,9 +174,10 @@ impl View {
                     //If we're at the beginning of the file, we do nothing
                     if y.saturating_add(y_scroll) != 0 {
                         if y > 0 {
-                            y -= 1;
+                            y = y.saturating_sub(1);
                         } else {
                             y_scroll = y_scroll.saturating_sub(1);
+                            self.needs_redraw = true;
                         }
                         let current_line_len = self
                             .buffer
@@ -159,8 +190,8 @@ impl View {
                         } else {
                             x = width.saturating_sub(1);
                             x_scroll = current_line_len.saturating_sub(width).saturating_add(1);
+                            self.needs_redraw = true;
                         }
-                        self.needs_redraw = true;
                     }
                 }
                 //If the cursor is not at the beginning of line
@@ -198,11 +229,12 @@ impl View {
                         }
                     }
                 } else {
-                    if x >= width {
+                    if x.saturating_add(1) >= width {
                         x_scroll = x_scroll.saturating_add(1);
                         self.needs_redraw = true;
+                    } else {
+                        x = x.saturating_add(1);
                     }
-                    x = x.saturating_add(1);
                 }
             }
             Direction::Down => 'down: {
