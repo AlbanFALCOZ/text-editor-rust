@@ -241,7 +241,7 @@ impl View {
 
             Direction::Down => 'down: {
                 //We let the user go down one line
-                if y.saturating_add(y_scroll) >= number_of_lines {
+                if y.saturating_add(y_scroll) >= number_of_lines.saturating_sub(1) {
                     break 'down;
                 }
                 if y >= height.saturating_sub(1) {
@@ -282,35 +282,8 @@ impl View {
             x: x_scroll,
             y: y_scroll,
         };
-        //self.scroll_location_into_view();
     }
 
-    /*fn scroll_location_into_view(&mut self) {
-        let Location { x, y } = self.location;
-        let Size { width, height } = self.size;
-        let mut offset_changed = false;
-
-        if y < self.scroll_offset.y {
-            self.scroll_offset.y = y;
-            offset_changed = true;
-        } else if y >= self.scroll_offset.y.saturating_add(height) {
-            self.scroll_offset.y = self
-                .scroll_offset
-                .y
-                .saturating_sub(height)
-                .saturating_add(1);
-            offset_changed = true;
-        }
-
-        if x < self.scroll_offset.x {
-            self.scroll_offset.x = x;
-            offset_changed = true;
-        } else if x >= self.scroll_offset.x.saturating_add(width) {
-            self.scroll_offset.x = self.scroll_offset.x.saturating_sub(width).saturating_add(1);
-            offset_changed = true;
-        }
-        self.needs_redraw = offset_changed;
-    }*/
 
     pub fn resize(&mut self, to_size: Size) {
         self.size = to_size;
