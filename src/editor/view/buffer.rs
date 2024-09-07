@@ -12,6 +12,10 @@ impl Buffer {
         self.lines.is_empty()
     }
 
+    pub fn height(&self) -> usize {
+        self.lines.len()
+    }
+
     pub fn load(file_name: &str) -> Result<Self, Error> {
         let file_content = std::fs::read_to_string(file_name)?;
         let mut lines: Vec<Line> = Vec::new();
