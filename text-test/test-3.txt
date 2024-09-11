@@ -1,0 +1,25 @@
+//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+//aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+# Testing regular text
+Hello, world! This is a test.
+
+# Testing tabs
+Here    is  a   tab separated   line.
+
+# Testing visible and invisible whitespace
+Non-breaking space,​zero-widthspace, thin space, en space, em space, three-per-em space, four-per-em space, figure space, punctuation space, narrow no-break space, medium mathematical space,　ideographic space,​‍zero-width non-joiner​,‍zero-width joiner​, horizontal	tab, vertical	tab, carriage	return, form﻿feed, space,​zero-width space,﻿mongolian vowel separator​, line	tabulation, ogham space mark, no-break space.
+
+# Testing control characters
+Control characters:[Escape][Bell]
+
+# Testing Compound Emojis
+Family emoji: 👨‍👩‍👧‍👦
+
+# Testing wide characters
+全角文字
+
+# Testing combined characters
+Combining: é (e with acute accent)
+
+# Testing regular symbols
+Symbols: ␣ (open box), ▯ (white vertical rectangle)
