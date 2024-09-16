@@ -1,21 +1,17 @@
 use crate::editor::editorcommand::{Direction, EditorCommand};
 use crate::editor::terminal::{Position, Size, Terminal};
 use crate::editor::view::buffer::Buffer;
-use std::cmp::min;
 use crate::editor::view::line::Line;
+use std::cmp::min;
 
 mod buffer;
 mod line;
 
-#[derive(Default, Debug,Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct Location {
     pub grapheme_index: usize,
     pub line_index: usize,
 }
-
-
-
-
 
 pub struct View {
     buffer: Buffer,
@@ -83,6 +79,9 @@ impl View {
             EditorCommand::Move(direction) => {
                 self.move_text_location(&direction);
             }
+            EditorCommand::Insert(char) => {
+                self.insert_char(char);
+            }
             EditorCommand::Quit => {}
         }
     }
@@ -119,7 +118,6 @@ impl View {
         self.scroll_horizontally(col);
     }
 
-
     pub fn caret_position(&self) -> Position {
         self.text_location_to_position()
             .saturating_sub(self.scroll_offset)
@@ -132,7 +130,6 @@ impl View {
         });
         Position { col, row }
     }
-
 
     fn move_text_location(&mut self, direction: &Direction) {
         let Size { height, .. } = self.size;
@@ -199,7 +196,6 @@ impl View {
             .map_or(0, Line::grapheme_count);
     }
 
-
     fn snap_to_valid_grapheme(&mut self) {
         self.text_location.grapheme_index = self
             .buffer
@@ -214,7 +210,6 @@ impl View {
         self.text_location.line_index = min(self.text_location.line_index, self.buffer.height());
     }
 
-
     pub fn resize(&mut self, to_size: Size) {
         self.size = to_size;
         self.needs_redraw = true;
@@ -226,7 +221,17 @@ impl View {
             self.needs_redraw = true;
         }
     }
-    
+
+    fn insert_char(&mut self, character: char) {
+        let old_len = self.buffer.lines.get(self.text_location.line_index).map_or(0, Line::grapheme_count);
+        self.buffer.insert_char(character, &self.text_location);
+        let new_len = self.buffer.lines.get(self.text_location.line_index).map_or(0, Line::grapheme_count);
+        let grapheme_delta = new_len.saturating_sub(old_len);
+        if grapheme_delta > 0 {
+            self.move_right();
+        }
+        self.needs_redraw = true;
+    }
 }
 
 impl Default for View {

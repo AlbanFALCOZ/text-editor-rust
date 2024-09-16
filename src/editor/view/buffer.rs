@@ -1,5 +1,6 @@
 use std::io::Error;
 use crate::editor::view::line::Line;
+use crate::editor::view::Location;
 
 #[derive(Default)]
 pub struct Buffer {
@@ -23,5 +24,17 @@ impl Buffer {
             lines.push(Line::from(line));
         };
         Ok(Self {lines})
+    }
+
+    pub fn insert_char(&mut self, character: char, at: &Location) {
+        if at.line_index > self.lines.len() {
+            return;
+        }
+        if at.line_index == self.lines.len() {
+            self.lines.push(Line::from(&character.to_string()));
+        }
+        else if let Some(line) = self.lines.get_mut(at.line_index) {
+            line.insert_character(character, at.grapheme_index);
+        }
     }
 }
