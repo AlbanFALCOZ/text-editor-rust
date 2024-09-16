@@ -1,4 +1,4 @@
-use std::{ ops::Range};
+use std::ops::Range;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
 
@@ -37,13 +37,18 @@ impl Line {
                     0 | 1 => GraphemeWidth::Half,
                     _ => GraphemeWidth::Full,
                 };
-                let replacement= match (unicode_width,grapheme) {
+                let replacement = match (unicode_width, grapheme) {
                     //Here, we replace all whitespace, except space and tab. Actually, there are some whitespaces that are not removed, add theme here if you want them gone
-                    _ if grapheme.contains(char::is_whitespace)&& grapheme != " " && grapheme != "\t"  => Some('␣'),
+                    _ if grapheme.contains(char::is_whitespace)
+                        && grapheme != " "
+                        && grapheme != "\t" =>
+                    {
+                        Some('␣')
+                    }
                     //Here, we check if the character is a control character like Bell or Null
                     _ if grapheme.chars().any(char::is_control) => Some('▯'),
-                    (0,_) => Some('.'),
-                    (_,_) => None,
+                    (0, _) => Some('.'),
+                    (_, _) => None,
                 };
                 TextFragment {
                     grapheme: grapheme.to_string(),
