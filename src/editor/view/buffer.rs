@@ -39,8 +39,17 @@ impl Buffer {
     }
 
     pub fn delete(&mut self, at: &Location){
-        if let Some(line) = self.lines.get_mut(at.line_index) {
-            line.delete(at.grapheme_index);
+        if let Some(line) = self.lines.get(at.line_index) {
+            if at.grapheme_index >= line.grapheme_count() && self.lines.len() > at.line_index.saturating_add(1) {
+                let next_line = self.lines.remove(at.line_index.saturating_add(1));
+                //We checked that the line at line_index existed
+                #[allow(clippy::indexing_slicing)]
+                self.lines[at.line_index].append(&next_line);
+            } else if at.grapheme_index < line.grapheme_count() {
+                //We checked that the line at line_index existed
+                #[allow(clippy::indexing_slicing)]
+                self.lines[at.line_index].delete(at.grapheme_index);
+            }
         }
     }
 }

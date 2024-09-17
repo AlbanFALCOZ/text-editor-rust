@@ -246,11 +246,17 @@ impl View {
     }
 
     fn backspace(&mut self) {
+        if self.text_location.line_index == 0 && self.text_location.grapheme_index == 0 {
+            return;
+        }
         self.move_left();
         self.delete();
     }
 
     fn delete(&mut self) {
+        if self.text_location.line_index >= self.buffer.lines.len().saturating_sub(1) && self.text_location.grapheme_index == self.buffer.lines.get(self.text_location.line_index).map_or(0,|line| { line.grapheme_count()}) {
+            return;
+        }
         self.buffer.delete(&self.text_location);
         self.needs_redraw = true;
     }
