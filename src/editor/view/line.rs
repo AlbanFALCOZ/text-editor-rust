@@ -103,7 +103,6 @@ impl Line {
             .sum()
     }
 
-
     pub fn insert_character(&mut self, character: char, grapheme_index: usize) {
         let mut result = String::new();
 
@@ -112,11 +111,21 @@ impl Line {
                 result.push(character);
             }
             result.push_str(&fragment.grapheme);
-            if grapheme_index >= self.fragments.len() {
-                result.push(character);
+        }
+        if grapheme_index >= self.fragments.len() {
+            result.push(character);
+        }
+        self.fragments = Self::str_to_fragments(&result);
+    }
+
+    pub fn delete(&mut self, grapheme_index: usize) {
+        let mut result = String::new();
+
+        for (index, fragment) in self.fragments.iter().enumerate() {
+            if grapheme_index != index {
+                result.push_str(&fragment.grapheme);
             }
         }
-
         self.fragments = Self::str_to_fragments(&result);
     }
 }
