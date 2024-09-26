@@ -1,6 +1,6 @@
-mod editorcommand;
-mod terminal;
-mod view;
+pub mod editorcommand;
+pub mod terminal;
+pub mod view;
 use crate::editor::editorcommand::EditorCommand;
 use crate::editor::terminal::Terminal;
 use crate::editor::view::View;
@@ -80,6 +80,11 @@ impl Editor {
         let _ = Terminal::move_cursor_to(self.view.caret_position());
         let _ = Terminal::show_cursor();
         let _ = Terminal::execute();
+    }
+
+    pub fn load_file(&mut self, file_name: &str) {
+        self.view.load(file_name);
+        self.view.redraw_view();
     }
 }
 

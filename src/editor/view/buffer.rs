@@ -1,14 +1,13 @@
-use std::io::Error;
 use crate::editor::view::line::Line;
 use crate::editor::view::Location;
+use std::io::Error;
 
 #[derive(Default)]
 pub struct Buffer {
-    pub lines: Vec<Line>
+    pub lines: Vec<Line>,
 }
 
 impl Buffer {
-
     pub fn is_empty(&self) -> bool {
         self.lines.is_empty()
     }
@@ -22,8 +21,8 @@ impl Buffer {
         let mut lines: Vec<Line> = Vec::new();
         for line in file_content.lines() {
             lines.push(Line::from(line));
-        };
-        Ok(Self {lines})
+        }
+        Ok(Self { lines })
     }
 
     pub fn insert_char(&mut self, character: char, at: &Location) {
@@ -32,15 +31,16 @@ impl Buffer {
         }
         if at.line_index == self.lines.len() {
             self.lines.push(Line::from(&character.to_string()));
-        }
-        else if let Some(line) = self.lines.get_mut(at.line_index) {
+        } else if let Some(line) = self.lines.get_mut(at.line_index) {
             line.insert_character(character, at.grapheme_index);
         }
     }
 
-    pub fn delete(&mut self, at: &Location){
+    pub fn delete(&mut self, at: &Location) {
         if let Some(line) = self.lines.get(at.line_index) {
-            if at.grapheme_index >= line.grapheme_count() && self.lines.len() > at.line_index.saturating_add(1) {
+            if at.grapheme_index >= line.grapheme_count()
+                && self.lines.len() > at.line_index.saturating_add(1)
+            {
                 let next_line = self.lines.remove(at.line_index.saturating_add(1));
                 //We checked that the line at line_index existed
                 #[allow(clippy::indexing_slicing)]

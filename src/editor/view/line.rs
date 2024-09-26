@@ -1,5 +1,5 @@
 use std::fmt;
-use std::fmt::{Formatter};
+use std::fmt::Formatter;
 use std::ops::Range;
 use unicode_segmentation::UnicodeSegmentation;
 use unicode_width::UnicodeWidthStr;
@@ -137,12 +137,13 @@ impl Line {
     }
 }
 
-
 impl fmt::Display for Line {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        let result: String = self.fragments.iter().map(|fragment| {
-            fragment.grapheme.clone()
-        }).collect();
+        let result: String = self
+            .fragments
+            .iter()
+            .map(|fragment| fragment.grapheme.clone())
+            .collect();
         write!(formatter, "{result}")
     }
 }

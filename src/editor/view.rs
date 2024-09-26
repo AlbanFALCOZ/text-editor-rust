@@ -254,10 +254,21 @@ impl View {
     }
 
     fn delete(&mut self) {
-        if self.text_location.line_index >= self.buffer.lines.len().saturating_sub(1) && self.text_location.grapheme_index == self.buffer.lines.get(self.text_location.line_index).map_or(0,|line| { line.grapheme_count()}) {
+        if self.text_location.line_index >= self.buffer.lines.len().saturating_sub(1)
+            && self.text_location.grapheme_index
+                == self
+                    .buffer
+                    .lines
+                    .get(self.text_location.line_index)
+                    .map_or(0, |line| line.grapheme_count())
+        {
             return;
         }
         self.buffer.delete(&self.text_location);
+        self.needs_redraw = true;
+    }
+
+    pub fn redraw_view(&mut self) {
         self.needs_redraw = true;
     }
 }
@@ -271,5 +282,34 @@ impl Default for View {
             text_location: Location::default(),
             scroll_offset: Position::default(),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn test_size() {
+        let size: Size = Size {
+            width: 100,
+            height: 10,
+        };
+        let mut view: View = View::default();
+        view.resize(size);
+        assert_eq!(view.size, size);
+    }
+
+    #[test]
+    fn test_offset_change_scroll() {
+        let terminal_size: (u16, u16) = crossterm::terminal::size().unwrap();
+        let mut view: View = View::default();
+        view.load(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.move_down(terminal_size.1 as usize);
+        view.scroll_text_location_into_view();
+        println!("{:?}", view.scroll_offset);
+        assert_eq!(view.scroll_offset.row, 1);
     }
 }
