@@ -10,6 +10,7 @@ pub struct Position {
 }
 
 impl Position {
+    #[must_use]
     pub fn saturating_sub(self, other: Self) -> Self {
         Self {
             row: self.row.saturating_sub(other.row),
@@ -29,6 +30,9 @@ pub struct Size {
 pub struct Terminal {}
 
 impl Terminal {
+    /// # Errors
+    ///
+    /// Will return `Err` is something goes wrong during the set-up
     pub fn set_up() -> Result<(), Error> {
         Self::enter_alternate_screen()?;
         Self::enable_raw_mode()?;
@@ -36,6 +40,9 @@ impl Terminal {
         Self::move_cursor_to(Position::default())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if something goes wrong when the terminal tries to terminate
     pub fn terminate() -> Result<(), Error> {
         Self::show_cursor()?;
         Self::reset_color()?;
@@ -45,21 +52,33 @@ impl Terminal {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::terminal::disable_raw_mode`] fails
     pub fn disable_raw_mode() -> Result<(), Error> {
         crossterm::terminal::disable_raw_mode()?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::terminal::enable_raw_mode`] fails
     pub fn enable_raw_mode() -> Result<(), Error> {
         crossterm::terminal::enable_raw_mode()?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::terminal::EnterAlternateScreen`] fails
     pub fn enter_alternate_screen() -> Result<(), Error> {
         Self::queue_command(crossterm::terminal::EnterAlternateScreen)?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::terminal::LeaveAlternateScreen`] fails
     pub fn leave_alternate_screen() -> Result<(), Error> {
         Self::queue_command(crossterm::terminal::LeaveAlternateScreen)?;
         Ok(())
@@ -67,7 +86,11 @@ impl Terminal {
 
     /// Return the current size of terminal.
     /// Edge cases for system where usize < u16 :
-    /// * Any coordinate 'x' will be truncated to usize if 'usize' < 'x' < 'u16'
+    /// * Any coordinate `x` will be truncated to usize if `usize < x < u16`
+    ///
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::terminal::size`] fails
     pub fn get_size() -> Result<Size, Error> {
         let (width_u16, height_16) = crossterm::terminal::size()?;
         #[allow(clippy::as_conversions)]
@@ -77,21 +100,33 @@ impl Terminal {
         Ok(Size { width, height })
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::style::Print`] fails
     pub fn clear_screen() -> Result<(), Error> {
         Self::queue_command(crossterm::terminal::Clear(ClearType::All))?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::terminal::Clear`] fails
     pub fn clear_line() -> Result<(), Error> {
         Self::queue_command(crossterm::terminal::Clear(ClearType::CurrentLine))?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::style::Print`] fails
     pub fn print(string: &str) -> Result<(), Error> {
         Self::queue_command(crossterm::style::Print(string))?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`Terminal::move_cursor_to`], [`Terminal::clear_line`] or [`Terminal::print`] fail
     pub fn print_row(at_row: usize, line: &str) -> Result<(), Error> {
         Self::move_cursor_to(Position {
             row: at_row,
@@ -102,6 +137,9 @@ impl Terminal {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`Terminal::set_color`] fails
     pub fn set_color_to_green() -> Result<(), Error> {
         Self::set_color(Colors {
             foreground: Option::from(Color::Green),
@@ -112,7 +150,12 @@ impl Terminal {
 
     /// Move cursor to the given Position.
     /// # Arguments
-    /// * `Position` - the position the cursor will be moved to. `Position.x` and `Position.Y` will be truncated to `u16::Max` if bigger
+    /// * `Position` - the position the cursor will be moved to.
+    ///
+    /// `Position.x` and `Position.Y` will be truncated to `u16::Max` if bigger
+    ///
+    /// # Errors
+    /// Will return `Err` if [`crossterm::cursor::MoveTo`] fails
     pub fn move_cursor_to(position: Position) -> Result<(), Error> {
         #[allow(clippy::cast_possible_truncation, clippy::as_conversions)]
         Self::queue_command(crossterm::cursor::MoveTo(
@@ -122,21 +165,33 @@ impl Terminal {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::style::SetColors`] fails
     pub fn set_color(colors: Colors) -> Result<(), Error> {
         Self::queue_command(crossterm::style::SetColors(colors))?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::style::ResetColor`] fails
     pub fn reset_color() -> Result<(), Error> {
         Self::queue_command(crossterm::style::ResetColor)?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::cursor::Hide`] fails
     pub fn hide_cursor() -> Result<(), Error> {
         Self::queue_command(crossterm::cursor::Hide)?;
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if [`crossterm::cursor::Show`] fails
     pub fn show_cursor() -> Result<(), Error> {
         Self::queue_command(crossterm::cursor::Show)?;
         Ok(())
@@ -147,6 +202,9 @@ impl Terminal {
         Ok(())
     }
 
+    /// # Errors
+    ///
+    /// Will return `Err` if the flush of the output stream fails
     pub fn execute() -> Result<(), Error> {
         stdout().flush()?;
         Ok(())

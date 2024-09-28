@@ -122,6 +122,7 @@ impl View {
         self.scroll_horizontally(col);
     }
 
+    #[must_use]
     pub fn caret_position(&self) -> Position {
         self.text_location_to_position()
             .saturating_sub(self.scroll_offset)
@@ -260,7 +261,7 @@ impl View {
                     .buffer
                     .lines
                     .get(self.text_location.line_index)
-                    .map_or(0, |line| line.grapheme_count())
+                    .map_or(0, Line::grapheme_count)
         {
             return;
         }
@@ -307,9 +308,8 @@ mod test {
         let mut view: View = View::default();
         view.load(".\\src\\editor.rs");
         assert!(!view.buffer.is_empty());
-        view.move_down(terminal_size.1 as usize);
+        view.move_down(terminal_size.1.into());
         view.scroll_text_location_into_view();
-        println!("{:?}", view.scroll_offset);
         assert_eq!(view.scroll_offset.row, 1);
     }
 }

@@ -17,6 +17,9 @@ pub struct Editor {
 }
 
 impl Editor {
+    /// # Errors
+    ///
+    /// Will return `Err` if [`Terminal::set_up`] fails
     pub fn new() -> Result<Self, Error> {
         let current_hook = take_hook();
         set_hook(Box::new(move |panic_info| {
@@ -35,6 +38,9 @@ impl Editor {
         })
     }
 
+    /// # Panics
+    ///
+    /// Will panic is [`crossterm::event::read`] returns an Error
     pub fn run(&mut self) {
         loop {
             self.refresh_screen();
