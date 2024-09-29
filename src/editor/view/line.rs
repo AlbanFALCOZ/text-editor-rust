@@ -147,3 +147,16 @@ impl fmt::Display for Line {
         write!(formatter, "{result}")
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_insert_character() {
+        let mut line: Line = Line::from("test insert character ");
+        let line_width = line.fragments.len();
+        line.insert_character('!', line_width);
+        assert_eq!(line_width.saturating_add(1), line.fragments.len());
+    }
+}

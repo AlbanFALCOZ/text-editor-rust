@@ -171,7 +171,7 @@ impl View {
             .map_or(0, Line::grapheme_count);
         if self.text_location.grapheme_index < line_width {
             self.text_location.grapheme_index += 1;
-        } else {
+        } else if self.text_location.line_index < self.buffer.height().saturating_sub(1) {
             self.move_to_start_of_line();
             self.move_down(1);
         }
@@ -212,7 +212,10 @@ impl View {
     }
 
     fn snap_to_valid_line(&mut self) {
-        self.text_location.line_index = min(self.text_location.line_index, self.buffer.height());
+        self.text_location.line_index = min(
+            self.text_location.line_index,
+            self.buffer.height().saturating_sub(1),
+        );
     }
 
     pub fn resize(&mut self, to_size: Size) {
@@ -311,5 +314,41 @@ mod test {
         view.move_down(terminal_size.1.into());
         view.scroll_text_location_into_view();
         assert_eq!(view.scroll_offset.row, 1);
+    }
+
+    #[test]
+    fn test_scroll_to_end() {
+        let mut view: View = View::default();
+        view.load(".\\src\\editor.rs");
+        let mut height = view.buffer.height();
+        while height > 0 {
+            view.move_down(1);
+            height = height.saturating_sub(1);
+        }
+        assert_eq!(
+            view.buffer.height().saturating_sub(1),
+            view.text_location.line_index
+        );
+    }
+
+    #[test]
+    fn test_must_scroll() {
+        let mut view: View = View::default();
+        assert!(view.needs_redraw);
+        view.needs_redraw = false;
+        view.load(".\\src\\editor.rs");
+        view.handle_command(EditorCommand::Move(Direction::PageDown));
+        assert!(view.needs_redraw);
+    }
+
+    #[test]
+    fn test_scroll_down_end() {
+        let mut view: View = View::default();
+        view.load(".\\src\\editor.rs");
+        assert_eq!(view.text_location.line_index, 0);
+        view.move_down(view.buffer.height().saturating_sub(1));
+        let line_index = view.text_location.line_index;
+        view.move_down(1);
+        assert_eq!(line_index, view.text_location.line_index);
     }
 }
