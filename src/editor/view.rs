@@ -268,11 +268,8 @@ impl View {
         {
             return;
         }
-        self.buffer.delete(&self.text_location);
-        self.needs_redraw = true;
-    }
 
-    pub fn redraw_view(&mut self) {
+        self.buffer.delete(&self.text_location);
         self.needs_redraw = true;
     }
 }

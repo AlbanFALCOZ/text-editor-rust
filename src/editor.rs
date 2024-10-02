@@ -87,11 +87,6 @@ impl Editor {
         let _ = Terminal::show_cursor();
         let _ = Terminal::execute();
     }
-
-    pub fn load_file(&mut self, file_name: &str) {
-        self.view.load(file_name);
-        self.view.redraw_view();
-    }
 }
 
 impl Drop for Editor {
