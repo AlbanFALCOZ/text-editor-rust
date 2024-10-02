@@ -294,6 +294,12 @@ mod test {
 
     use super::*;
 
+    fn set_up(file_name: &str) -> View {
+        let mut view = View::default();
+        view.load(file_name);
+        view
+    }
+
     #[test]
     fn test_size() {
         let size: Size = Size {
@@ -308,8 +314,7 @@ mod test {
     #[test]
     fn test_offset_change_scroll() {
         let terminal_size: (u16, u16) = crossterm::terminal::size().unwrap();
-        let mut view: View = View::default();
-        view.load(".\\src\\editor.rs");
+        let mut view: View = set_up(".\\src\\editor.rs");
         assert!(!view.buffer.is_empty());
         view.move_down(terminal_size.1.into());
         view.scroll_text_location_into_view();
@@ -318,8 +323,7 @@ mod test {
 
     #[test]
     fn test_scroll_to_end() {
-        let mut view: View = View::default();
-        view.load(".\\src\\editor.rs");
+        let mut view: View = set_up(".\\src\\editor.rs");
         let mut height = view.buffer.height();
         while height > 0 {
             view.move_down(1);
@@ -343,12 +347,343 @@ mod test {
 
     #[test]
     fn test_scroll_down_end() {
-        let mut view: View = View::default();
-        view.load(".\\src\\editor.rs");
+        let mut view: View = set_up(".\\src\\editor.rs");
         assert_eq!(view.text_location.line_index, 0);
         view.move_down(view.buffer.height().saturating_sub(1));
         let line_index = view.text_location.line_index;
         view.move_down(1);
         assert_eq!(line_index, view.text_location.line_index);
     }
+
+    #[test]
+    fn test_scroll_up_beginning() {
+        let mut view: View = set_up(".\\src\\editor.rs");
+        assert_eq!(view.text_location.line_index, 0);
+        view.move_up(1);
+        assert_eq!(view.text_location.line_index, 0);
+    }
+
+    #[test]
+    fn test_screen_scroll_up() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        view.move_down(1);
+        let line_width = view
+            .buffer
+            .lines
+            .get(view.text_location.line_index)
+            .unwrap()
+            .grapheme_count();
+        view.move_to_end_of_line();
+        view.scroll_text_location_into_view();
+        assert_eq!(view.text_location.grapheme_index, line_width);
+        view.move_up(1);
+        assert_eq!(
+            view.text_location.grapheme_index,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+        view.scroll_text_location_into_view();
+        assert_eq!(view.scroll_offset.col, view.text_location.grapheme_index);
+        assert_eq!(
+            view.scroll_offset.col,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+    }
+    #[test]
+    fn test_screen_scroll_down() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        view.move_down(1);
+        let line_width = view
+            .buffer
+            .lines
+            .get(view.text_location.line_index)
+            .unwrap()
+            .grapheme_count();
+        view.move_to_end_of_line();
+        view.scroll_text_location_into_view();
+        assert_eq!(view.text_location.grapheme_index, line_width);
+        view.move_down(1);
+        assert_eq!(
+            view.text_location.grapheme_index,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+        view.scroll_text_location_into_view();
+        assert_eq!(view.scroll_offset.col, view.text_location.grapheme_index);
+        assert_eq!(
+            view.scroll_offset.col,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+    }
+
+    #[test]
+    fn test_page_down() {
+        let mut view: View = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.move_down(1);
+        view.handle_command(EditorCommand::Move(Direction::PageDown));
+        view.scroll_text_location_into_view();
+        assert_eq!(view.scroll_offset.row, 1);
+    }
+
+    #[test]
+    fn test_page_up() {
+        let mut view: View = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.handle_command(EditorCommand::Move(Direction::PageDown));
+        view.move_down(1);
+        view.scroll_text_location_into_view();
+        view.handle_command(EditorCommand::Move(Direction::PageUp));
+        assert_eq!(view.scroll_offset.row, 1);
+    }
+
+    #[test]
+    fn test_move_right() {
+        let mut view: View = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.move_down(2);
+        view.move_right();
+        assert_eq!(view.text_location.grapheme_index, 1);
+        view.move_to_end_of_line();
+        view.scroll_text_location_into_view();
+        assert_eq!(
+            view.text_location.grapheme_index,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+        let line_index: usize = view.text_location.line_index;
+        view.move_right();
+        view.scroll_text_location_into_view();
+        assert_eq!(line_index.saturating_add(1), view.text_location.line_index);
+        assert_eq!(view.text_location.grapheme_index, 0);
+    }
+
+    #[test]
+    fn test_move_right_at_bottom() {
+        let mut view = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        while view.text_location.line_index < view.buffer.height().saturating_sub(1) {
+            view.handle_command(EditorCommand::Move(Direction::PageDown));
+        }
+        view.scroll_text_location_into_view();
+        view.move_to_end_of_line();
+        let grapheme_index = view.text_location.grapheme_index;
+        view.move_right();
+        assert_eq!(grapheme_index, view.text_location.grapheme_index);
+    }
+
+    #[test]
+    fn test_move_left() {
+        let mut view = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.move_down(3);
+        view.move_left();
+        assert_eq!(view.text_location.line_index, 2);
+        assert_eq!(
+            view.text_location.grapheme_index,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+        view.move_to_start_of_line();
+        view.move_left();
+        assert_eq!(view.text_location.line_index, 1);
+        assert_eq!(
+            view.text_location.grapheme_index,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+    }
+
+    #[test]
+    fn test_move_left_start() {
+        let mut view = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.move_right();
+        assert_eq!(view.text_location.grapheme_index, 1);
+        view.move_left();
+        assert_eq!(view.text_location.grapheme_index, 0);
+        view.move_left();
+        assert_eq!(view.text_location.grapheme_index, 0);
+        assert_eq!(view.text_location.line_index, 0);
+    }
+
+    #[test]
+    fn test_scroll_offset_move_left() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        view.move_down(1);
+        view.move_left();
+        view.scroll_text_location_into_view();
+        assert_eq!(
+            view.scroll_offset.col.saturating_sub(1),
+            view.buffer
+                .lines
+                .first()
+                .unwrap()
+                .grapheme_count()
+                .saturating_sub(Terminal::get_size().unwrap().width)
+        );
+    }
+
+    #[test]
+    fn test_scroll_offset_move_right() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        view.move_down(1);
+        view.move_to_end_of_line();
+        view.scroll_text_location_into_view();
+        view.move_right();
+        view.scroll_text_location_into_view();
+        assert_eq!(view.scroll_offset.col, 0);
+    }
+
+    #[test]
+    fn test_scroll_offset_move_right_end() {
+        let mut view: View = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.handle_command(EditorCommand::Move(Direction::PageDown));
+        assert_eq!(view.scroll_offset.row, 0);
+        view.move_to_end_of_line();
+        view.move_right();
+        view.scroll_text_location_into_view();
+        assert_eq!(view.scroll_offset.row, 1);
+    }
+
+    #[test]
+    fn test_scroll_offset_move_left_start() {
+        let mut view: View = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.resize(Terminal::get_size().unwrap());
+        view.handle_command(EditorCommand::Move(Direction::PageDown));
+        view.move_down(1);
+        view.scroll_text_location_into_view();
+        assert_eq!(view.scroll_offset.row, 1);
+        view.handle_command(EditorCommand::Move(Direction::PageUp));
+        assert_eq!(view.scroll_offset.row, 1);
+        view.move_left();
+        view.scroll_text_location_into_view();
+        assert_eq!(view.scroll_offset.row, 0);
+        assert_eq!(
+            view.scroll_offset.col.saturating_sub(1),
+            view.buffer
+                .lines
+                .first()
+                .unwrap()
+                .grapheme_count()
+                .saturating_sub(Terminal::get_size().unwrap().width)
+        );
+    }
+
+    #[test]
+    fn test_move_up_position() {
+        let mut view: View = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.move_down(4);
+        view.move_to_end_of_line();
+        assert_eq!(
+            view.text_location.grapheme_index,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+        let line_width = view.text_location.grapheme_index;
+        view.move_up(1);
+        assert_eq!(line_width, view.text_location.grapheme_index);
+        let line_above_width = view
+            .buffer
+            .lines
+            .get(view.text_location.line_index.saturating_sub(1))
+            .unwrap()
+            .grapheme_count();
+        view.move_up(1);
+        assert_eq!(line_above_width, view.text_location.grapheme_index);
+    }
+
+    #[test]
+    fn test_move_down_position() {
+        let mut view: View = set_up(".\\src\\editor.rs");
+        assert!(!view.buffer.is_empty());
+        view.move_down(5);
+        view.move_to_end_of_line();
+        assert_eq!(
+            view.text_location.grapheme_index,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+        let line_width = view.text_location.grapheme_index;
+        view.move_down(1);
+        assert_eq!(line_width, view.text_location.grapheme_index);
+        let line_under_width = view
+            .buffer
+            .lines
+            .get(view.text_location.line_index.saturating_add(1))
+            .unwrap()
+            .grapheme_count();
+        view.move_down(1);
+        assert_eq!(line_under_width, view.text_location.grapheme_index);
+    }
+
+    #[test]
+    fn test_delete_character_at_end_line() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        let current_line_width = view.buffer.lines.first().unwrap().grapheme_count();
+        let next_line_width = view.buffer.lines.get(1).unwrap().grapheme_count();
+        let number_lines = view.buffer.height();
+        view.move_to_end_of_line();
+        view.handle_command(EditorCommand::Delete);
+        assert_eq!(
+            view.buffer.lines.first().unwrap().grapheme_count(),
+            current_line_width.saturating_add(next_line_width)
+        );
+        assert_eq!(view.buffer.height(), number_lines.saturating_sub(1));
+    }
+
+    #[test]
+    fn test_backspace_at_start_line() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        let current_line_width = view.buffer.lines.first().unwrap().grapheme_count();
+        let next_line_width = view.buffer.lines.get(1).unwrap().grapheme_count();
+        let number_lines = view.buffer.height();
+        view.move_down(1);
+        view.backspace();
+        assert_eq!(
+            view.buffer.lines.first().unwrap().grapheme_count(),
+            current_line_width.saturating_add(next_line_width)
+        );
+        assert_eq!(view.buffer.height(), number_lines.saturating_sub(1));
+    }
+
+    // TODO: add test scroll with suppr and delete
 }

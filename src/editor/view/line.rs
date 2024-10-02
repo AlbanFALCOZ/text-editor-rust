@@ -159,4 +159,22 @@ mod test {
         line.insert_character('!', line_width);
         assert_eq!(line_width.saturating_add(1), line.fragments.len());
     }
+
+    #[test]
+    fn test_suppr_character() {
+        let mut line: Line = Line::from("test suppr character");
+        let line_width = line.grapheme_count();
+        line.delete(0);
+        assert_eq!(line_width.saturating_sub(1), line.fragments.len());
+    }
+
+    #[test]
+    fn test_supp_character_out_of_line() {
+        let mut line: Line = Line::from("test suppr character");
+        let line_width = line.grapheme_count();
+        line.delete(line.grapheme_count());
+        assert_eq!(line_width, line.fragments.len());
+        line.delete(line.grapheme_count().saturating_add(10));
+        assert_eq!(line_width, line.fragments.len());
+    }
 }
