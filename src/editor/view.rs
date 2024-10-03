@@ -2,12 +2,12 @@ use crate::editor::editorcommand::{Direction, EditorCommand};
 use crate::editor::terminal::{Position, Size, Terminal};
 use crate::editor::view::buffer::Buffer;
 use crate::editor::view::line::Line;
-use std::cmp::min;
+use std::cmp::{min, PartialEq};
 
 mod buffer;
 mod line;
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, PartialEq)]
 pub struct Location {
     pub grapheme_index: usize,
     pub line_index: usize,
@@ -258,19 +258,30 @@ impl View {
     }
 
     fn delete(&mut self) {
-        if self.text_location.line_index >= self.buffer.lines.len().saturating_sub(1)
+        if self.end_of_file() {
+            return;
+        }
+        if self.start_of_view() {
+            self.scroll_offset.row = self.scroll_offset.row.saturating_sub(1);
+        }
+        self.buffer.delete(&self.text_location);
+        self.scroll_text_location_into_view();
+        self.needs_redraw = true;
+    }
+
+    fn end_of_file(&self) -> bool {
+        self.text_location.line_index == self.buffer.height().saturating_sub(1)
             && self.text_location.grapheme_index
                 == self
                     .buffer
                     .lines
                     .get(self.text_location.line_index)
-                    .map_or(0, Line::grapheme_count)
-        {
-            return;
-        }
+                    .unwrap()
+                    .grapheme_count()
+    }
 
-        self.buffer.delete(&self.text_location);
-        self.needs_redraw = true;
+    fn start_of_view(&self) -> bool {
+        self.text_location == Location::default()
     }
 }
 
@@ -682,5 +693,23 @@ mod test {
         assert_eq!(view.buffer.height(), number_lines.saturating_sub(1));
     }
 
-    // TODO: add test scroll with suppr and delete
+    #[test]
+    fn test_backspace_scroll() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        for _ in 0..2 {
+            view.handle_command(EditorCommand::Move(Direction::PageDown));
+            view.scroll_text_location_into_view();
+        }
+        while view.text_location.line_index > view.scroll_offset.row {
+            view.move_up(1);
+        }
+        assert!(view.scroll_offset.row > 0);
+        view.move_to_start_of_line();
+        let line_index: usize = view.text_location.line_index;
+        let scroll_offset_row = view.scroll_offset.row;
+        view.backspace();
+        assert_eq!(line_index.saturating_sub(1), view.text_location.line_index);
+        assert_eq!(scroll_offset_row.saturating_sub(1), view.scroll_offset.row);
+    }
 }
