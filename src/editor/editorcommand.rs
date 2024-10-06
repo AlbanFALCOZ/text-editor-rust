@@ -30,6 +30,7 @@ impl TryFrom<Event> for EditorCommand {
                 code, modifiers, ..
             }) => match (code, modifiers) {
                 (KeyCode::Char('q' | 'Q'), KeyModifiers::CONTROL) => Ok(Self::Quit),
+                (KeyCode::Tab, KeyModifiers::NONE) => Ok(Self::Insert('\t')),
                 (KeyCode::Char(char), KeyModifiers::NONE) => Ok(Self::Insert(char)),
                 (KeyCode::Backspace, KeyModifiers::NONE) => Ok(Self::Backspace),
                 (KeyCode::Delete, KeyModifiers::NONE) => Ok(Self::Delete),

@@ -79,6 +79,11 @@ impl View {
             EditorCommand::Move(direction) => {
                 self.move_text_location(&direction);
             }
+            EditorCommand::Insert('\t') => {
+                for _ in 0..4 {
+                    self.insert_char(' ');
+                }
+            }
             EditorCommand::Insert(char) => {
                 self.insert_char(char);
             }
@@ -711,5 +716,17 @@ mod test {
         view.backspace();
         assert_eq!(line_index.saturating_sub(1), view.text_location.line_index);
         assert_eq!(scroll_offset_row.saturating_sub(1), view.scroll_offset.row);
+    }
+
+    #[test]
+    fn test_line_width_tab() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        let line_width = view.buffer.lines.first().unwrap().grapheme_count();
+        view.handle_command(EditorCommand::Insert('\t'));
+        assert_eq!(
+            line_width.saturating_add(4),
+            view.buffer.lines.first().unwrap().grapheme_count()
+        );
     }
 }

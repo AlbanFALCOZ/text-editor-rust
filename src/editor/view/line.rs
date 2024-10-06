@@ -52,7 +52,7 @@ impl Line {
                         Some('␣')
                     }
                     //Here, we check if the character is a control character like Bell or Null
-                    _ if grapheme.chars().any(char::is_control) => Some('▯'),
+                    _ if grapheme.chars().any(char::is_control) && grapheme != "\t" => Some('▯'),
                     (0, _) => Some('.'),
                     (_, _) => None,
                 };
@@ -176,5 +176,13 @@ mod test {
         assert_eq!(line_width, line.fragments.len());
         line.delete(line.grapheme_count().saturating_add(10));
         assert_eq!(line_width, line.fragments.len());
+    }
+
+    #[test]
+    fn test_tab() {
+        let mut line: Line = Line::from("a");
+        assert_eq!(line.grapheme_count(), 1);
+        line.insert_character('\t', 0);
+        assert_eq!(line.grapheme_count(), 2);
     }
 }
