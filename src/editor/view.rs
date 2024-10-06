@@ -160,6 +160,9 @@ impl View {
         self.snap_to_valid_grapheme();
     }
     fn move_down(&mut self, step: usize) {
+        if self.end_of_file() {
+            return;
+        }
         self.text_location.line_index = self.text_location.line_index.saturating_add(step);
         self.snap_to_valid_grapheme();
         self.snap_to_valid_line();
