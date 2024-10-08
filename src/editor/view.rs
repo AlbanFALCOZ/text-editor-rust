@@ -87,6 +87,9 @@ impl View {
             EditorCommand::Insert(char) => {
                 self.insert_char(char);
             }
+            EditorCommand::Enter => {
+                self.insert_line();
+            }
             EditorCommand::Delete => {
                 self.delete();
             }
@@ -290,6 +293,12 @@ impl View {
 
     fn start_of_view(&self) -> bool {
         self.text_location == Location::default()
+    }
+
+    fn insert_line(&mut self) {
+        self.buffer.insert_line(&self.text_location);
+        self.move_text_location(&Direction::Right);
+        self.needs_redraw = true;
     }
 }
 
@@ -731,5 +740,40 @@ mod test {
             line_width.saturating_add(4),
             view.buffer.lines.first().unwrap().grapheme_count()
         );
+    }
+
+    #[test]
+    fn test_enter() {
+        let mut view: View = set_up(".\\text-test\\test-3.txt");
+        assert!(!view.buffer.is_empty());
+        for _ in 0..4 {
+            view.move_down(1);
+            view.move_right();
+        }
+        let line_width = view
+            .buffer
+            .lines
+            .get(view.text_location.line_index)
+            .unwrap()
+            .grapheme_count();
+        view.handle_command(EditorCommand::Enter);
+        assert_eq!(
+            line_width.saturating_sub(4),
+            view.buffer
+                .lines
+                .get(view.text_location.line_index)
+                .unwrap()
+                .grapheme_count()
+        );
+        assert_eq!(
+            4,
+            view.buffer
+                .lines
+                .get(view.text_location.line_index.saturating_sub(1))
+                .unwrap()
+                .grapheme_count()
+        );
+        assert_eq!(0, view.text_location.grapheme_index);
+        assert_eq!(5, view.text_location.line_index);
     }
 }

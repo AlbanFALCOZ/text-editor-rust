@@ -52,4 +52,12 @@ impl Buffer {
             }
         }
     }
+
+    pub fn insert_line(&mut self, at: &Location) {
+        if let Some(line_to_split) = self.lines.get_mut(at.line_index) {
+            let line_sliced = line_to_split.split_at(at.grapheme_index);
+            self.lines
+                .insert(at.line_index.saturating_add(1), line_sliced);
+        }
+    }
 }

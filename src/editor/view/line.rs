@@ -25,6 +25,7 @@ struct TextFragment {
     replacement: Option<char>,
 }
 
+#[derive(Default)]
 pub struct Line {
     fragments: Vec<TextFragment>,
 }
@@ -103,6 +104,16 @@ impl Line {
                 GraphemeWidth::Full => 2,
             })
             .sum()
+    }
+
+    pub fn split_at(&mut self, grapheme_index: usize) -> Self {
+        if grapheme_index > self.grapheme_count() {
+            return Self::default();
+        }
+        let remainder = self.fragments.split_off(grapheme_index);
+        Self {
+            fragments: remainder,
+        }
     }
 
     pub fn insert_character(&mut self, character: char, grapheme_index: usize) {
